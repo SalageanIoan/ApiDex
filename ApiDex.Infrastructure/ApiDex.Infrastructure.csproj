@@ -1,0 +1,67 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <LocalBgeBaseModelCacheDir>$(MSBuildProjectDirectory)\obj\local-embeddings-cache\</LocalBgeBaseModelCacheDir>
+        <LocalBgeBaseModelName>bge-base-en-v1.5</LocalBgeBaseModelName>
+        <LocalBgeBaseModelUrl>https://huggingface.co/Xenova/bge-base-en-v1.5/resolve/main/onnx/model_quantized.onnx</LocalBgeBaseModelUrl>
+        <LocalBgeBaseVocabUrl>https://huggingface.co/Xenova/bge-base-en-v1.5/resolve/main/vocab.txt</LocalBgeBaseVocabUrl>
+        <LocalBgeBaseModelPath>$(LocalBgeBaseModelCacheDir)$([System.Text.RegularExpressions.Regex]::Replace($(LocalBgeBaseModelUrl), "[^a-zA-Z0-9\.]", "_"))</LocalBgeBaseModelPath>
+        <LocalBgeBaseVocabPath>$(LocalBgeBaseModelCacheDir)$([System.Text.RegularExpressions.Regex]::Replace($(LocalBgeBaseVocabUrl), "[^a-zA-Z0-9\.]", "_"))</LocalBgeBaseVocabPath>
+    </PropertyGroup>
+
+        <ItemGroup>
+            <ProjectReference Include="..\ApiDex.Application\ApiDex.Application.csproj" />
+            <ProjectReference Include="..\ApiDex.Domain\ApiDex.Domain.csproj" />
+        </ItemGroup>
+
+        <ItemGroup>
+            <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+            <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.3">
+                <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+                <PrivateAssets>all</PrivateAssets>
+            </PackageReference>
+            <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+            <PackageReference Include="Neo4j.Driver" Version="5.28.0" />
+            <PackageReference Include="OpenAI" Version="2.11.0" />
+            <PackageReference Include="Qdrant.Client" Version="1.18.1" />
+            <PackageReference Include="SmartComponents.LocalEmbeddings" Version="0.1.0-preview10148" />
+        </ItemGroup>
+
+        <Target Name="AttachLocalBgeBaseEmbeddingsContentFiles" BeforeTargets="AssignTargetPaths" DependsOnTargets="AcquireLocalBgeBaseEmbeddingsModel; AcquireLocalBgeBaseEmbeddingsVocab">
+            <ItemGroup>
+                <Content CopyToOutputDirectory="PreserveNewest"
+                         Include="$(LocalBgeBaseModelPath)"
+                         TargetPath="LocalEmbeddingsModel\$(LocalBgeBaseModelName)\model.onnx" />
+                <Content CopyToOutputDirectory="PreserveNewest"
+                         Include="$(LocalBgeBaseVocabPath)"
+                         TargetPath="LocalEmbeddingsModel\$(LocalBgeBaseModelName)\vocab.txt" />
+            </ItemGroup>
+        </Target>
+
+        <Target Name="AcquireLocalBgeBaseEmbeddingsModel" Condition="!Exists('$(LocalBgeBaseModelPath)')">
+            <PropertyGroup>
+                <_LocalBgeBaseTempModelPath>$([System.IO.Path]::GetTempFileName())</_LocalBgeBaseTempModelPath>
+            </PropertyGroup>
+            <DownloadFile SourceUrl="$(LocalBgeBaseModelUrl)"
+                          DestinationFolder="$([System.IO.Path]::GetDirectoryName($(_LocalBgeBaseTempModelPath)))"
+                          DestinationFileName="$([System.IO.Path]::GetFileName($(_LocalBgeBaseTempModelPath)))" />
+            <Move SourceFiles="$(_LocalBgeBaseTempModelPath)" DestinationFiles="$(LocalBgeBaseModelPath)" />
+        </Target>
+
+        <Target Name="AcquireLocalBgeBaseEmbeddingsVocab" Condition="!Exists('$(LocalBgeBaseVocabPath)')">
+            <PropertyGroup>
+                <_LocalBgeBaseTempVocabPath>$([System.IO.Path]::GetTempFileName())</_LocalBgeBaseTempVocabPath>
+            </PropertyGroup>
+            <DownloadFile SourceUrl="$(LocalBgeBaseVocabUrl)"
+                          DestinationFolder="$([System.IO.Path]::GetDirectoryName($(_LocalBgeBaseTempVocabPath)))"
+                          DestinationFileName="$([System.IO.Path]::GetFileName($(_LocalBgeBaseTempVocabPath)))" />
+            <Move SourceFiles="$(_LocalBgeBaseTempVocabPath)" DestinationFiles="$(LocalBgeBaseVocabPath)" />
+        </Target>
+
+</Project>
